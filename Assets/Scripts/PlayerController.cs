@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour
 
     public LayerMask solidObjectsLayer;
     public LayerMask interactableLayer;
+    public LayerMask battleLayer;
     private bool isMoving;
 
     private Vector2 input;
@@ -20,7 +21,7 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
     }
 
-    private void Update()
+    public void HandleUpdate()
     {
         HandleMovement();
         HandleInteraction();
@@ -76,30 +77,43 @@ public class PlayerController : MonoBehaviour
 
         transform.position = targetPos;
         isMoving = false;
+
+        CheckForEncounters();
     }
 
     private bool IsWalkable(Vector3 targetPos)
     {
-        if (Overlaps(targetPos, 0.000001f, solidObjectsLayer | interactableLayer))
+        if (Overlaps(targetPos, 0.2f, solidObjectsLayer | interactableLayer) != null)
         {
             return false;
         }
         return true;
     }
 
-    private bool Overlaps(Vector3 targetPos, float radius, LayerMask layer)
+    private Collider2D Overlaps(Vector3 targetPos, float radius, LayerMask layer)
     {
-        return Physics2D.OverlapCircle(targetPos, radius, layer) != null;
+        return Physics2D.OverlapCircle(targetPos, radius, layer);
     }
 
     private void Interact()
     {
         var facingDir = new Vector3(animator.GetFloat("moveX"), animator.GetFloat("moveY"));
         var interactPos = transform.position + facingDir;
-
-        if (Overlaps(interactPos, 0.2f, interactableLayer))
+        var collider = Overlaps(interactPos, 0.2f, interactableLayer);
+        if (collider)
         {
-            Debug.Log("NPC Interaction");
+            collider.GetComponent<Interactable>()?.Interact();
+        }
+    }
+
+    private void CheckForEncounters()
+    {
+        if (Overlaps(transform.position, 0.01f, battleLayer) != null)
+        {
+            if (Random.Range(1, 100) <= 50)
+            {
+                Debug.Log("Battle started");
+            }
         }
     }
 }
